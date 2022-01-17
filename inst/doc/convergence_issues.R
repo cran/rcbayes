@@ -17,15 +17,15 @@ library(tibble)
 library(ggplot2)
 
 ages <- 0:80
-net_mig <- c(11804, 10606, 9845, 9244, 8471, 7940, 7348, 6885, 6431,
-             6055, 5454, 4997, 4845, 4596, 4397, 4814, 4592, 4646, 5386,
-             7180, 11374, 14713, 17195, 18937, 19223, 19091, 18507,
-             17615, 16929, 15693, 15246, 14152, 13365, 12340, 11609,
-             10278, 9547, 8992, 8438, 7883, 7315, 6909, 6730, 6272,
-             5994, 6087, 5896, 5592, 5487, 5237, 6021, 5933, 5577,
-             5674, 5503, 4916, 5008, 4822, 4824, 4696, 4086, 4019,
-             4139, 4054, 4134, 3625, 3871, 4238, 4306, 4440, 3118,
-             2980, 2885, 2845, 2795, 2085, 2076, 2035, 2030, 1986, 2037)
+migrants <- c(11804, 10606, 9845, 9244, 8471, 7940, 7348, 6885, 6431,
+              6055, 5454, 4997, 4845, 4596, 4397, 4814, 4592, 4646, 5386,
+              7180, 11374, 14713, 17195, 18937, 19223, 19091, 18507,
+              17615, 16929, 15693, 15246, 14152, 13365, 12340, 11609,
+              10278, 9547, 8992, 8438, 7883, 7315, 6909, 6730, 6272,
+              5994, 6087, 5896, 5592, 5487, 5237, 6021, 5933, 5577,
+              5674, 5503, 4916, 5008, 4822, 4824, 4696, 4086, 4019,
+              4139, 4054, 4134, 3625, 3871, 4238, 4306, 4440, 3118,
+              2980, 2885, 2845, 2795, 2085, 2076, 2035, 2030, 1986, 2037)
 pop <- c(105505, 105505, 105505, 105505, 105505, 106126, 106126, 106126,
          106126, 106126, 100104, 100104, 100104, 100104, 100104, 114880,
          114880, 114880, 114880, 114880, 136845, 136845, 136845, 136845,
@@ -39,7 +39,7 @@ pop <- c(105505, 105505, 105505, 105505, 105505, 106126, 106126, 106126,
 
 ## ---- eval=FALSE--------------------------------------------------------------
 #  rc_res <- mig_estimate_rc(
-#    ages, net_mig, pop,
+#    ages, migrants, pop,
 #    pre_working_age = TRUE,
 #    working_age = TRUE,
 #    retirement = TRUE,
@@ -72,8 +72,8 @@ rc_res[['check_converge']] <- matrix(
                   c("mean", "se_mean", "n_eff", "Rhat")),
   byrow = TRUE)
 
-rc_res[['fit_df']] <- tibble(age = 0:80,
-       data = net_mig/pop,
+rc_res[['fit_df']] <- tibble(ages = 0:80,
+       data = migrants/pop,
        median = c(0.11107413, 0.10207562, 0.09392648, 0.08667344, 0.08025095, 0.07451119, 
                   0.06935217, 0.06473068, 0.06059616, 0.05690437, 0.05363063, 0.05073012, 
                   0.04815361, 0.04582636, 0.04373611, 0.04189403, 0.04047357, 0.04090839, 
@@ -124,13 +124,13 @@ rc_res[['check_converge']]
 rc_res[["fit_df"]] %>%
   ggplot(aes(ages, data)) +
   geom_point(aes(color = "data")) +
-  geom_line(aes(x = age, y = median, color = "fit")) +
+  geom_line(aes(x = ages, y = median, color = "fit")) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
   scale_color_manual(name = "", values = c(data = "red", fit = "black")) +
   ylab("migration rate")
 
 ## ---- eval=FALSE--------------------------------------------------------------
-#  res <- mig_estimate_rc(ages, net_mig, pop,
+#  res <- mig_estimate_rc(ages, migrants, pop,
 #                         pre_working_age = TRUE,
 #                         working_age = TRUE,
 #                         retirement = TRUE,
@@ -142,7 +142,7 @@ rc_res[["fit_df"]] %>%
 
 ## ---- eval=FALSE--------------------------------------------------------------
 #  init_vals <- init_rc(ages,
-#                       net_mig,
+#                       migrants,
 #                       pop,
 #                       pre_working_age = TRUE,
 #                       working_age = TRUE,
@@ -150,7 +150,7 @@ rc_res[["fit_df"]] %>%
 #                       post_retirement = TRUE,
 #                       nchains = 4)
 #  
-#  res <- mig_estimate_rc(ages, net_mig, pop,
+#  res <- mig_estimate_rc(ages, migrants, pop,
 #                         pre_working_age = TRUE,
 #                         working_age = TRUE,
 #                         retirement = TRUE,
@@ -161,7 +161,7 @@ rc_res[["fit_df"]] %>%
 
 ## ---- eval=FALSE--------------------------------------------------------------
 #  init_vals <- init_rc(ages,
-#                       net_mig,
+#                       migrants,
 #                       pop,
 #                       pre_working_age = TRUE,
 #                       working_age = TRUE,
@@ -169,7 +169,7 @@ rc_res[["fit_df"]] %>%
 #                       post_retirement = TRUE,
 #                       nchains = 4)
 #  
-#  rc_res_fixed <- mig_estimate_rc(ages, net_mig, pop,
+#  rc_res_fixed <- mig_estimate_rc(ages, migrants, pop,
 #                         pre_working_age = TRUE,
 #                         working_age = TRUE,
 #                         retirement = TRUE,
@@ -204,8 +204,8 @@ rc_res_fixed[['check_converge']] <- matrix(
                   c("mean", "se_mean", "n_eff", "Rhat")),
   byrow = TRUE)
 
-rc_res_fixed[['fit_df']] <- tibble(age = 0:80,
-       data = net_mig/pop,
+rc_res_fixed[['fit_df']] <- tibble(ages = 0:80,
+       data = migrants/pop,
        median = c(0.11066577, 0.10183467, 0.09389724, 0.08677859, 0.08039617, 0.07466633,
                   0.06952911, 0.06491991, 0.06079010, 0.05708701, 0.05377364, 0.05079940, 
                   0.04814050, 0.04576222, 0.04363252, 0.04173797, 0.04023607, 0.04059125, 
@@ -256,7 +256,7 @@ rc_res_fixed[['check_converge']]
 rc_res_fixed[["fit_df"]] %>%
   ggplot(aes(ages, data)) +
   geom_point(aes(color = "data")) +
-  geom_line(aes(x = age, y = median, color = "fit")) +
+  geom_line(aes(x = ages, y = median, color = "fit")) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
   scale_color_manual(name = "", values = c(data = "red", fit = "black")) +
   ylab("migration rate")

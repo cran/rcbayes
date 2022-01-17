@@ -12,9 +12,9 @@
 
 <meta name="author" content="Monica Alexander, Jessie Yeung, Tim Riffe" />
 
-<meta name="date" content="2021-10-20" />
+<meta name="date" content="2022-01-15" />
 
-<title>Achieving Model Convergence With mig_estimate_rc</title>
+<title>Model Convergence With mig_estimate_rc</title>
 
 <script src="data:application/javascript;base64,Ly8gUGFuZG9jIDIuOSBhZGRzIGF0dHJpYnV0ZXMgb24gYm90aCBoZWFkZXIgYW5kIGRpdi4gV2UgcmVtb3ZlIHRoZSBmb3JtZXIgKHRvCi8vIGJlIGNvbXBhdGlibGUgd2l0aCB0aGUgYmVoYXZpb3Igb2YgUGFuZG9jIDwgMi44KS4KZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKGUpIHsKICB2YXIgaHMgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCJkaXYuc2VjdGlvbltjbGFzcyo9J2xldmVsJ10gPiA6Zmlyc3QtY2hpbGQiKTsKICB2YXIgaSwgaCwgYTsKICBmb3IgKGkgPSAwOyBpIDwgaHMubGVuZ3RoOyBpKyspIHsKICAgIGggPSBoc1tpXTsKICAgIGlmICghL15oWzEtNl0kL2kudGVzdChoLnRhZ05hbWUpKSBjb250aW51ZTsgIC8vIGl0IHNob3VsZCBiZSBhIGhlYWRlciBoMS1oNgogICAgYSA9IGguYXR0cmlidXRlczsKICAgIHdoaWxlIChhLmxlbmd0aCA+IDApIGgucmVtb3ZlQXR0cmlidXRlKGFbMF0ubmFtZSk7CiAgfQp9KTsK"></script>
 
@@ -161,9 +161,9 @@ div.csl-indent {
 
 
 
-<h1 class="title toc-ignore">Achieving Model Convergence With mig_estimate_rc</h1>
+<h1 class="title toc-ignore">Model Convergence With mig_estimate_rc</h1>
 <h4 class="author">Monica Alexander, Jessie Yeung, Tim Riffe</h4>
-<h4 class="date">2021-10-20</h4>
+<h4 class="date">2022-01-15</h4>
 
 
 
@@ -177,26 +177,26 @@ div.csl-indent {
 <li><p>The potential scale reduction statistic, commonly referred to as the <strong>R-hat</strong> statistic, provides insight into whether the model has converged <span class="citation">(Gelman, Rubin, and others 1992)</span>. You want the R-hat values to be close to 1, and R-hat values far greater than 1 indicate that convergence has not been achieved. Generally, Gelman et al. recommend ensuring that R-hat values are below 1.1, although there is no universally agreed upon threshold <span class="citation">(Gelman et al. 2013)</span>.</p></li>
 <li><p>The <strong>Effective sample size</strong> provides insight into the autocorrelation among samples in the same chain. The larger the effective sample size the better. If your effective sample size is small, you should consider increasing the number of MCMC samples.</p></li>
 </ul>
-<p>The rest of this document focuses on dealing with convergence issues, which will likely be reflected as large R-hat values. It is not uncommon to find that your model has not converged. This is particularly true if your total population size is large or you are fitting either the 11 or 13 parameter models. Resolving a non-convergent model is not always straight-forward, but we will explain some strategies that can be used with <code>mig_estimate_rc</code>.</p>
+<p>The rest of this document focuses on dealing with convergence issues, which will likely be reflected as large R-hat values. It is not uncommon to find that your model has not converged. This is particularly true if you are fitting a the Poisson model (i.e., providing count data) with a large total population size and/or you are fitting either the 11 or 13 parameter models. Resolving a non-convergent model is not always straight-forward, but we will explain some strategies that can be used with <code>mig_estimate_rc</code>.</p>
 </div>
 </div>
 <div id="example-of-a-non-convergent-model" class="section level2">
 <h2>Example of a Non-Convergent Model</h2>
-<p>Here is an example of a non-convergent model. We will be fitting the full 13-parameter model.</p>
+<p>Here is an example of a non-convergent model. We will be fitting the full 13-parameter model. In this example, we provide count data meaning that we are fitting the Poisson model.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rcbayes)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tibble)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>ages <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">80</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>net_mig <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">11804</span>, <span class="dv">10606</span>, <span class="dv">9845</span>, <span class="dv">9244</span>, <span class="dv">8471</span>, <span class="dv">7940</span>, <span class="dv">7348</span>, <span class="dv">6885</span>, <span class="dv">6431</span>,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>             <span class="dv">6055</span>, <span class="dv">5454</span>, <span class="dv">4997</span>, <span class="dv">4845</span>, <span class="dv">4596</span>, <span class="dv">4397</span>, <span class="dv">4814</span>, <span class="dv">4592</span>, <span class="dv">4646</span>, <span class="dv">5386</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>             <span class="dv">7180</span>, <span class="dv">11374</span>, <span class="dv">14713</span>, <span class="dv">17195</span>, <span class="dv">18937</span>, <span class="dv">19223</span>, <span class="dv">19091</span>, <span class="dv">18507</span>,</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>             <span class="dv">17615</span>, <span class="dv">16929</span>, <span class="dv">15693</span>, <span class="dv">15246</span>, <span class="dv">14152</span>, <span class="dv">13365</span>, <span class="dv">12340</span>, <span class="dv">11609</span>,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>             <span class="dv">10278</span>, <span class="dv">9547</span>, <span class="dv">8992</span>, <span class="dv">8438</span>, <span class="dv">7883</span>, <span class="dv">7315</span>, <span class="dv">6909</span>, <span class="dv">6730</span>, <span class="dv">6272</span>,</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>             <span class="dv">5994</span>, <span class="dv">6087</span>, <span class="dv">5896</span>, <span class="dv">5592</span>, <span class="dv">5487</span>, <span class="dv">5237</span>, <span class="dv">6021</span>, <span class="dv">5933</span>, <span class="dv">5577</span>,</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>             <span class="dv">5674</span>, <span class="dv">5503</span>, <span class="dv">4916</span>, <span class="dv">5008</span>, <span class="dv">4822</span>, <span class="dv">4824</span>, <span class="dv">4696</span>, <span class="dv">4086</span>, <span class="dv">4019</span>,</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>             <span class="dv">4139</span>, <span class="dv">4054</span>, <span class="dv">4134</span>, <span class="dv">3625</span>, <span class="dv">3871</span>, <span class="dv">4238</span>, <span class="dv">4306</span>, <span class="dv">4440</span>, <span class="dv">3118</span>,</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>             <span class="dv">2980</span>, <span class="dv">2885</span>, <span class="dv">2845</span>, <span class="dv">2795</span>, <span class="dv">2085</span>, <span class="dv">2076</span>, <span class="dv">2035</span>, <span class="dv">2030</span>, <span class="dv">1986</span>, <span class="dv">2037</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>migrants <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">11804</span>, <span class="dv">10606</span>, <span class="dv">9845</span>, <span class="dv">9244</span>, <span class="dv">8471</span>, <span class="dv">7940</span>, <span class="dv">7348</span>, <span class="dv">6885</span>, <span class="dv">6431</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>              <span class="dv">6055</span>, <span class="dv">5454</span>, <span class="dv">4997</span>, <span class="dv">4845</span>, <span class="dv">4596</span>, <span class="dv">4397</span>, <span class="dv">4814</span>, <span class="dv">4592</span>, <span class="dv">4646</span>, <span class="dv">5386</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>              <span class="dv">7180</span>, <span class="dv">11374</span>, <span class="dv">14713</span>, <span class="dv">17195</span>, <span class="dv">18937</span>, <span class="dv">19223</span>, <span class="dv">19091</span>, <span class="dv">18507</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>              <span class="dv">17615</span>, <span class="dv">16929</span>, <span class="dv">15693</span>, <span class="dv">15246</span>, <span class="dv">14152</span>, <span class="dv">13365</span>, <span class="dv">12340</span>, <span class="dv">11609</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>              <span class="dv">10278</span>, <span class="dv">9547</span>, <span class="dv">8992</span>, <span class="dv">8438</span>, <span class="dv">7883</span>, <span class="dv">7315</span>, <span class="dv">6909</span>, <span class="dv">6730</span>, <span class="dv">6272</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>              <span class="dv">5994</span>, <span class="dv">6087</span>, <span class="dv">5896</span>, <span class="dv">5592</span>, <span class="dv">5487</span>, <span class="dv">5237</span>, <span class="dv">6021</span>, <span class="dv">5933</span>, <span class="dv">5577</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>              <span class="dv">5674</span>, <span class="dv">5503</span>, <span class="dv">4916</span>, <span class="dv">5008</span>, <span class="dv">4822</span>, <span class="dv">4824</span>, <span class="dv">4696</span>, <span class="dv">4086</span>, <span class="dv">4019</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>              <span class="dv">4139</span>, <span class="dv">4054</span>, <span class="dv">4134</span>, <span class="dv">3625</span>, <span class="dv">3871</span>, <span class="dv">4238</span>, <span class="dv">4306</span>, <span class="dv">4440</span>, <span class="dv">3118</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>              <span class="dv">2980</span>, <span class="dv">2885</span>, <span class="dv">2845</span>, <span class="dv">2795</span>, <span class="dv">2085</span>, <span class="dv">2076</span>, <span class="dv">2035</span>, <span class="dv">2030</span>, <span class="dv">1986</span>, <span class="dv">2037</span>)</span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>pop <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">105505</span>, <span class="dv">105505</span>, <span class="dv">105505</span>, <span class="dv">105505</span>, <span class="dv">105505</span>, <span class="dv">106126</span>, <span class="dv">106126</span>, <span class="dv">106126</span>,</span>
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>         <span class="dv">106126</span>, <span class="dv">106126</span>, <span class="dv">100104</span>, <span class="dv">100104</span>, <span class="dv">100104</span>, <span class="dv">100104</span>, <span class="dv">100104</span>, <span class="dv">114880</span>,</span>
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>         <span class="dv">114880</span>, <span class="dv">114880</span>, <span class="dv">114880</span>, <span class="dv">114880</span>, <span class="dv">136845</span>, <span class="dv">136845</span>, <span class="dv">136845</span>, <span class="dv">136845</span>,</span>
@@ -208,7 +208,7 @@ div.csl-indent {
 <span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>         <span class="dv">126270</span>, <span class="dv">108314</span>, <span class="dv">108314</span>, <span class="dv">108314</span>, <span class="dv">108314</span>, <span class="dv">108314</span>, <span class="dv">79827</span>, <span class="dv">79827</span>,</span>
 <span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>         <span class="dv">79827</span>, <span class="dv">79827</span>, <span class="dv">79827</span>, <span class="dv">59556</span>, <span class="dv">59556</span>, <span class="dv">59556</span>, <span class="dv">59556</span>, <span class="dv">59556</span>, <span class="dv">59556</span>)</span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>rc_res <span class="ot">&lt;-</span> <span class="fu">mig_estimate_rc</span>(</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  ages, net_mig, pop,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  ages, migrants, pop,</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">pre_working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">retirement =</span> <span class="cn">TRUE</span>,</span>
@@ -234,7 +234,7 @@ div.csl-indent {
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>rc_res[[<span class="st">&quot;fit_df&quot;</span>]] <span class="sc">%&gt;%</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(ages, data)) <span class="sc">+</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> <span class="st">&quot;data&quot;</span>)) <span class="sc">+</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">y =</span> median, <span class="at">color =</span> <span class="st">&quot;fit&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> ages, <span class="at">y =</span> median, <span class="at">color =</span> <span class="st">&quot;fit&quot;</span>)) <span class="sc">+</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lower, <span class="at">ymax =</span> upper), <span class="at">alpha =</span> <span class="fl">0.2</span>) <span class="sc">+</span></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">name =</span> <span class="st">&quot;&quot;</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="at">data =</span> <span class="st">&quot;red&quot;</span>, <span class="at">fit =</span> <span class="st">&quot;black&quot;</span>)) <span class="sc">+</span></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;migration rate&quot;</span>)</span></code></pre></div>
@@ -245,7 +245,7 @@ div.csl-indent {
 <h2>Method 1: Adjusting Stan Parameters</h2>
 <p>One method for improving convergence is to adjust the Stan parameters. Stan may already provide warnings about divergent transitions, low effective sample size and/or maximum treedepth. These errors may suggest specific parameters to change.</p>
 <p>To adjust Stan parameters, <code>mig_estimate_rc</code> can accept additional inputs for Stan. For example, to increase the <code>max_treedepth</code>, <code>adapt_delta</code>, and number of iterations, you can do the following:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">mig_estimate_rc</span>(ages, net_mig, pop,</span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">mig_estimate_rc</span>(ages, migrants, pop,</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">pre_working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                       <span class="at">retirement =</span> <span class="cn">TRUE</span>,</span>
@@ -260,7 +260,7 @@ div.csl-indent {
 <h2>Method 2: Setting initial conditions using <code>init_rc</code></h2>
 <p>One of the additional parameters that can be provided to Stan is <code>init</code>, which specifies initial values for the MCMC algorithm. For the Rogers-Castro model, it is possible to improve the likelihood of achieving convergence by strategically setting the initial values based on the data. This technique is formalized in the <code>init_rc</code> function, which will output initial values in a list format that can be provided directly to stan.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>init_vals <span class="ot">&lt;-</span> <span class="fu">init_rc</span>(ages,</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                     net_mig,</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                     migrants,</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                     pop,</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">pre_working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">working_age =</span> <span class="cn">TRUE</span>,</span>
@@ -268,7 +268,7 @@ div.csl-indent {
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                     <span class="at">post_retirement =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                     <span class="at">nchains =</span> <span class="dv">4</span>)</span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">mig_estimate_rc</span>(ages, net_mig, pop,</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">mig_estimate_rc</span>(ages, migrants, pop,</span>
 <span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>                       <span class="at">pre_working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                       <span class="at">working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>                       <span class="at">retirement =</span> <span class="cn">TRUE</span>,</span>
@@ -282,12 +282,13 @@ div.csl-indent {
 <li>The <code>mu</code> parameters describe the age at which peaks occur. The function uses the ages associated with local maximums described above.</li>
 <li>The <code>c</code> parameter describes the overall migration level. The function uses the minimum observed migration rate.</li>
 </ul>
+<p>It is important that the user runs <code>init_rc</code> and <code>mig_estimate_rc</code> with the same data, included components, and number of chains. Otherwise, <code>mig_estimate_rc</code> will not run.</p>
 </div>
 <div id="example-fixing-a-non-convergent-model" class="section level2">
 <h2>Example: Fixing a Non-Convergent Model</h2>
 <p>Recall the example above of a non-convergent model. We will fix this model by adjusting the Stan parameters and using <code>init_rc</code> to set initial values.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>init_vals <span class="ot">&lt;-</span> <span class="fu">init_rc</span>(ages,</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                     net_mig,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                     migrants,</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                     pop,</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">pre_working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">working_age =</span> <span class="cn">TRUE</span>,</span>
@@ -295,7 +296,7 @@ div.csl-indent {
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                     <span class="at">post_retirement =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                     <span class="at">nchains =</span> <span class="dv">4</span>)</span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>rc_res_fixed <span class="ot">&lt;-</span> <span class="fu">mig_estimate_rc</span>(ages, net_mig, pop,</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>rc_res_fixed <span class="ot">&lt;-</span> <span class="fu">mig_estimate_rc</span>(ages, migrants, pop,</span>
 <span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                       <span class="at">pre_working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>                       <span class="at">working_age =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                       <span class="at">retirement =</span> <span class="cn">TRUE</span>,</span>
@@ -324,7 +325,7 @@ div.csl-indent {
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>rc_res_fixed[[<span class="st">&quot;fit_df&quot;</span>]] <span class="sc">%&gt;%</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(ages, data)) <span class="sc">+</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> <span class="st">&quot;data&quot;</span>)) <span class="sc">+</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">y =</span> median, <span class="at">color =</span> <span class="st">&quot;fit&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> ages, <span class="at">y =</span> median, <span class="at">color =</span> <span class="st">&quot;fit&quot;</span>)) <span class="sc">+</span></span>
 <span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lower, <span class="at">ymax =</span> upper), <span class="at">alpha =</span> <span class="fl">0.2</span>) <span class="sc">+</span></span>
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">name =</span> <span class="st">&quot;&quot;</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="at">data =</span> <span class="st">&quot;red&quot;</span>, <span class="at">fit =</span> <span class="st">&quot;black&quot;</span>)) <span class="sc">+</span></span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;migration rate&quot;</span>)</span></code></pre></div>

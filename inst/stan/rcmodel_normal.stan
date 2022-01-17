@@ -1,12 +1,11 @@
 data {
-  int<lower=0,upper=1> pre_working_age;         // 0 = no, 1 = yes
-  int<lower=0,upper=1> working_age;             // 0 = no, 1 = yes
-  int<lower=0,upper=1> retirement;              // 0 = no, 1 = yes
-  int<lower=0,upper=1> post_retirement;         // 0 = no, 1 = yes
+  int<lower=0,upper=1> pre_working_age; // 0 = no, 1 = yes
+  int<lower=0,upper=1> working_age; // 0 = no, 1 = yes
+  int<lower=0,upper=1> retirement; // 0 = no, 1 = yes
+  int<lower=0,upper=1> post_retirement; // 0 = no, 1 = yes
   int<lower=0> N;
-  vector[N] x;                                  //ages
-  int<lower=0> y[N];                            //age-specific net migrants
-  vector[N] pop;                                //age-specific population size
+  vector[N] x;
+  vector[N] y;
 }
 parameters {
   real<lower=0> alpha1[1*pre_working_age];
@@ -22,6 +21,7 @@ parameters {
   real<lower=0> lambda3[1*retirement];
   real<upper=0.05> lambda4[1*post_retirement];
   real<lower=0, upper=1> c;
+  real<lower=0> sigma;
 }
 transformed parameters {
   vector[N] mu_rc;
@@ -30,11 +30,12 @@ transformed parameters {
   vector[N] mu_rc_3;
   vector[N] mu_rc_4;
   vector[N] zero;
-
+  
   for(i in 1:N){
     zero[i] = 0;
   }
-
+  
+  
   mu_rc_1 = pre_working_age==1?a1[1]*exp(-alpha1[1]*x):zero;
   mu_rc_2 = working_age==1?a2[1]*exp(-alpha2[1]*(x - mu2[1]) - exp(-lambda2[1]*(x - mu2[1]))):zero;
   mu_rc_3 = retirement==1?a3[1]*exp(-alpha3[1]*(x - mu3[1]) - exp(-lambda3[1]*(x - mu3[1]))):zero;
@@ -43,17 +44,10 @@ transformed parameters {
 }
 model {
   // likelihood
-
-  vector[N] log_lambda;
-
-  for (i in 1:N){
-    log_lambda[i] = mu_rc[i] + pop[i];
-  }
-
-  y ~ poisson(mu_rc .* pop);
-
+  y ~ normal(mu_rc, sigma);
+  
   //priors
-
+  
   if(pre_working_age==1){
     alpha1 ~ normal(0,1);
     a1 ~ normal(0,0.1);
@@ -74,5 +68,6 @@ model {
     a4 ~ normal(0,0.05);
     lambda4 ~ normal(0,0.01);
   }
-  c ~ normal(min(to_vector(y) ./ pop),0.1);
+  c ~ normal(min(y),0.1);
+  sigma ~ normal(0,1);
 }
